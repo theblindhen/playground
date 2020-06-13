@@ -3,7 +3,7 @@ use std::ops::Index;
 // It looks like the bit-vec package is better maintained than fixedbitset
 use fixedbitset::FixedBitSet;
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Bits2D {
     elem: FixedBitSet,
     length1: u32,
