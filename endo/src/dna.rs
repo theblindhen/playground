@@ -95,6 +95,10 @@ impl DNA {
             v: self.v.clone().slice(start..end),
         }
     }
+
+    pub fn at(&self, index: usize) -> Option<Base> {
+        self.v.get(index).map(|b| *b)
+    }
 }
 
 #[cfg(test)]
