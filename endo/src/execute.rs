@@ -26,7 +26,7 @@ enum TItem {
 
 type Template = Vec<TItem>;
 
-fn step(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<(), ()> {
+fn step(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<(), ()> {
     let p = pattern(dna, rna_sink)?;
     let t = template(dna, rna_sink)?;
     matchreplace(p, t);
@@ -34,7 +34,7 @@ fn step(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<(), ()> {
 }
 
 /// May leave `dna` inconsistent when EOF reached
-fn pattern(mut dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<Pattern, ()> {
+fn pattern(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Pattern, ()> {
     let mut p = vec![];
     let mut lvl: usize = 0;
     loop {
@@ -121,7 +121,7 @@ fn consts(dna: &mut DNA) -> DNA {
     acc
 }
 
-fn template(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<Template, ()> {
+fn template(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template, ()> {
     // TODO
     rna_sink("CFPICFPIC".into());
     Err(())
