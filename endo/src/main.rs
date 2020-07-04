@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use im::vector::Vector;
+mod dna;
 
 fn main() {
     println!("Hello, world!");
