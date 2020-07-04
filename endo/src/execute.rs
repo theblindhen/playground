@@ -180,7 +180,7 @@ mod test {
 
         // Test 2 from spec
         assert_eq!(
-            pattern(&mut "IIPIPICPIICICIIF".into(), &mut noop),
+            pattern(&mut "IIP IPICP IIC IC IIF".into(), &mut noop),
             Ok(vec![
                 PItem::Open(),
                 PItem::Skip(2),
