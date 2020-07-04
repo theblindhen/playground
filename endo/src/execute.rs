@@ -59,21 +59,20 @@ fn consts(dna: &mut DNA) -> DNA {
             Base::C => acc.append(Base::I),
             Base::F => acc.append(Base::C),
             Base::P => acc.append(Base::F),
-            Base::I =>
-                match dna.pop() {
-                    Some(Base::C) => acc.append(Base::P),
-                    Some(b) => {
-                        // Went too far by two
-                        dna.prepend(b);
-                        dna.prepend(Base::I);
-                        return acc;
-                    },
-                    None => {
-                        // Went too far by one
-                        dna.prepend(Base::I);
-                        return acc;
-                    }
+            Base::I => match dna.pop() {
+                Some(Base::C) => acc.append(Base::P),
+                Some(b) => {
+                    // Went too far by two
+                    dna.prepend(b);
+                    dna.prepend(Base::I);
+                    return acc;
                 }
+                None => {
+                    // Went too far by one
+                    dna.prepend(Base::I);
+                    return acc;
+                }
+            },
         }
     }
     acc
