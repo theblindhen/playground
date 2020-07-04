@@ -6,14 +6,14 @@ pub fn execute(dna: &mut DNA, mut rna_sink: impl FnMut(DNA)) {
     }
 }
 
-fn step(dna: &mut DNA, mut rna_sink: &mut impl FnMut(DNA)) -> Result<(), ()> {
+fn step(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<(), ()> {
     let p = pattern(dna, rna_sink)?;
     let t = template(dna, rna_sink)?;
     // TODO: matchreplace
     Ok(())
 }
 
-fn pattern(dna: &mut DNA, mut rna_sink: &mut impl FnMut(DNA)) -> Result<DNA, ()> {
+fn pattern(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<DNA, ()> {
     rna_sink("ICFPICFPI".into());
     Ok(DNA::default())
 }
