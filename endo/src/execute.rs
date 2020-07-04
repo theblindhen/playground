@@ -6,6 +6,7 @@ pub fn execute(dna: &mut DNA, mut rna_sink: impl FnMut(DNA)) {
     }
 }
 
+#[derive(Clone, PartialEq, Eq, Debug)]
 enum PItem {
     Base(Base),
     Skip(usize),
@@ -16,6 +17,7 @@ enum PItem {
 
 type Pattern = Vec<PItem>;
 
+#[derive(Clone, PartialEq, Eq, Debug)]
 enum TItem {
     Base(Base),
     Ref(usize, usize),
@@ -31,10 +33,51 @@ fn step(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<(), ()> {
     Ok(())
 }
 
-fn pattern(dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<Pattern, ()> {
-    // TODO
-    rna_sink("ICFPICFPI".into());
-    Ok(Pattern::default())
+/// May leave `dna` inconsistent when EOF reached
+fn pattern(mut dna: &mut DNA, rna_sink: &mut impl FnMut(DNA)) -> Result<Pattern, ()> {
+    let mut p = vec![];
+    let mut lvl: usize = 0;
+    loop {
+        match dna.pop() {
+            Some(Base::C) => p.push(PItem::Base(Base::I)),
+            Some(Base::F) => p.push(PItem::Base(Base::C)),
+            Some(Base::P) => p.push(PItem::Base(Base::F)),
+            Some(Base::I) => match dna.pop() {
+                Some(Base::C) => p.push(PItem::Base(Base::P)),
+                Some(Base::P) => {
+                    let n = nat(&mut dna)?;
+                    p.push(PItem::Skip(n));
+                }
+                Some(Base::F) => {
+                    dna.pop(); // quirk of the specification
+                    let s = consts(&mut dna);
+                    p.push(PItem::Search(s));
+                }
+                Some(Base::I) => match dna.pop() {
+                    Some(Base::P) => {
+                        lvl += 1;
+                        p.push(PItem::Open())
+                    }
+                    Some(Base::C) | Some(Base::F) => {
+                        if lvl == 0 {
+                            return Ok(p);
+                        } else {
+                            lvl = lvl - 1;
+                            p.push(PItem::Close());
+                        }
+                    }
+                    Some(Base::I) => {
+                        rna_sink(dna.subseq(0, 7));
+                        dna.drop(7);
+                    }
+                    None => break,
+                },
+                None => break,
+            },
+            None => break,
+        }
+    }
+    Err(())
 }
 
 /// MSB is last
@@ -123,6 +166,27 @@ mod test {
         let mut dna = "CFIPC".into();
         assert_eq!(consts(&mut dna), "IC".into());
         assert_eq!(dna, "IFC".into());
+    }
 
+    #[test]
+    fn test_pattern() {
+        fn noop(_: DNA) {}
+
+        // Test 1 from spec
+        assert_eq!(
+            pattern(&mut "CIIC".into(), &mut noop),
+            Ok(vec![PItem::Base(Base::I)])
+        );
+
+        // Test 2 from spec
+        assert_eq!(
+            pattern(&mut "IIPIPICPIICICIIF".into(), &mut noop),
+            Ok(vec![
+                PItem::Open(),
+                PItem::Skip(2),
+                PItem::Close(),
+                PItem::Base(Base::P)
+            ])
+        );
     }
 }
