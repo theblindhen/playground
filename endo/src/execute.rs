@@ -12,6 +12,9 @@ pub fn execute(mut dna: DNA, mut rna_sink: impl FnMut(DNA)) {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+struct Finish;
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum PItem {
     Base(Base),
@@ -32,7 +35,7 @@ enum TItem {
 
 type Template = Vec<TItem>;
 
-fn step(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<(), ()> {
+fn step(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<(), Finish> {
     let p = pattern(dna, rna_sink)?;
     let t = template(dna, rna_sink)?;
     matchreplace(p, t);
@@ -40,7 +43,7 @@ fn step(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<(), ()> {
 }
 
 /// May leave `dna` inconsistent when EOF reached
-fn pattern(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Pattern, ()> {
+fn pattern(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Pattern, Finish> {
     let mut p = vec![]; // TODO: avoid allocation?
     let mut lvl: usize = 0;
     loop {
@@ -83,11 +86,11 @@ fn pattern(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Pattern, 
             None => break,
         }
     }
-    Err(())
+    Err(Finish)
 }
 
 /// MSB is last
-fn nat(dna: &mut DNA) -> Result<usize, ()> {
+fn nat(dna: &mut DNA) -> Result<usize, Finish> {
     let mut shiftcount = 0;
     let mut acc = 0;
     while let Some(b) = dna.pop() {
@@ -98,7 +101,7 @@ fn nat(dna: &mut DNA) -> Result<usize, ()> {
         }
         shiftcount += 1;
     }
-    Err(())
+    Err(Finish)
 }
 
 fn consts(dna: &mut DNA) -> DNA {
@@ -128,7 +131,7 @@ fn consts(dna: &mut DNA) -> DNA {
 }
 
 /// May leave `dna` inconsistent when EOF reached
-fn template(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template, ()> {
+fn template(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template, Finish> {
     let mut t = vec![]; // TODO: avoid allocation?
     loop {
         match dna.pop() {
@@ -159,7 +162,7 @@ fn template(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template
             None => break,
         }
     }
-    Err(())
+    Err(Finish)
 }
 
 fn matchreplace(pattern: Pattern, template: Template) {
@@ -247,7 +250,7 @@ mod test {
 
     #[test]
     fn test_template() {
-        assert_eq!(template(&mut "".into(), &mut noop), Err(()));
+        assert_eq!(template(&mut "".into(), &mut noop), Err(Finish));
 
         assert_eq!(
             template(&mut "IF(P,CP) IIP(ICP) IIF".into(), &mut noop),
