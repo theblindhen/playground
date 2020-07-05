@@ -24,7 +24,7 @@ fn main() {
         }
     });
 
-    execute::execute(&mut dna, |dna| s.send(Some(dna)).unwrap());
+    execute::execute(dna, |chunk| s.send(Some(chunk)).unwrap());
     s.send(None).unwrap();
     thr.join();
 }

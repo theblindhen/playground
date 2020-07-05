@@ -1,7 +1,13 @@
 use crate::dna::{Base, DNA};
 
-pub fn execute(dna: &mut DNA, mut rna_sink: impl FnMut(DNA)) {
-    while step(dna, &mut rna_sink).is_ok() {
+/// The `dna` value is consumed since the implementation does not follow the
+/// specification about mutation of `dna` in the step where the program ends.
+pub fn execute(mut dna: DNA, mut rna_sink: impl FnMut(DNA)) {
+    // TODO: these lines are just for testing. Remove soon.
+    rna_sink("ICFPICFPI".into());
+    rna_sink("CFPICFPIC".into());
+
+    while step(&mut dna, &mut rna_sink).is_ok() {
         // do nothing
     }
 }
