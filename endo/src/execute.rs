@@ -20,7 +20,7 @@ type Pattern = Vec<PItem>;
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum TItem {
     Base(Base),
-    Ref(usize, usize),
+    Ref { n: usize, l: usize },
     RefLen(usize),
 }
 
@@ -35,7 +35,7 @@ fn step(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<(), ()> {
 
 /// May leave `dna` inconsistent when EOF reached
 fn pattern(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Pattern, ()> {
-    let mut p = vec![];
+    let mut p = vec![]; // TODO: avoid allocation?
     let mut lvl: usize = 0;
     loop {
         match dna.pop() {
@@ -121,9 +121,38 @@ fn consts(dna: &mut DNA) -> DNA {
     acc
 }
 
-fn template(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template, ()> {
-    // TODO
-    rna_sink("CFPICFPIC".into());
+/// May leave `dna` inconsistent when EOF reached
+fn template(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template, ()> {
+    let mut t = vec![]; // TODO: avoid allocation?
+    loop {
+        match dna.pop() {
+            Some(Base::C) => t.push(TItem::Base(Base::I)),
+            Some(Base::F) => t.push(TItem::Base(Base::C)),
+            Some(Base::P) => t.push(TItem::Base(Base::F)),
+            Some(Base::I) => match dna.pop() {
+                Some(Base::C) => t.push(TItem::Base(Base::P)),
+                Some(Base::F) | Some(Base::P) => {
+                    let l = nat(&mut dna)?;
+                    let n = nat(&mut dna)?;
+                    t.push(TItem::Ref { n, l });
+                }
+                Some(Base::I) => match dna.pop() {
+                    Some(Base::C) | Some(Base::F) => return Ok(t),
+                    Some(Base::P) => {
+                        let n = nat(&mut dna)?;
+                        t.push(TItem::RefLen(n));
+                    }
+                    Some(Base::I) => {
+                        rna_sink(dna.subseq(0, 7));
+                        dna.drop(7);
+                    }
+                    None => break,
+                },
+                None => break,
+            },
+            None => break,
+        }
+    }
     Err(())
 }
 
@@ -169,10 +198,10 @@ mod test {
         assert_eq!(dna, "IPC".into());
     }
 
+    fn noop(_: DNA) {}
+
     #[test]
     fn test_pattern() {
-        fn noop(_: DNA) {}
-
         // Test 1 from spec
         assert_eq!(
             pattern(&mut "CIIC".into(), &mut noop),
@@ -203,5 +232,25 @@ mod test {
             pattern(&mut "IFI(C F P IC) IP(CP) IIF".into(), &mut noop),
             Ok(vec![PItem::Search("ICFP".into()), PItem::Skip(1)])
         );
+
+        let mut rna = vec![];
+        let t = pattern(&mut "P III(ICFPICF) IC IIC".into(), &mut |x| rna.push(x));
+        assert_eq!(t, Ok(vec![PItem::Base(Base::F), PItem::Base(Base::P)]));
+        assert_eq!(rna, vec!["ICFPICF".into()]);
+    }
+
+    #[test]
+    fn test_template() {
+        assert_eq!(template(&mut "".into(), &mut noop), Err(()));
+
+        assert_eq!(
+            template(&mut "IF(P,CP) IIP(ICP) IIF".into(), &mut noop),
+            Ok(vec![TItem::Ref { l: 0, n: 1 }, TItem::RefLen(2)])
+        );
+
+        let mut rna = vec![];
+        let t = template(&mut "C III(ICFPICF) F IIC".into(), &mut |x| rna.push(x));
+        assert_eq!(t, Ok(vec![TItem::Base(Base::I), TItem::Base(Base::C)]));
+        assert_eq!(rna, vec!["ICFPICF".into()]);
     }
 }
