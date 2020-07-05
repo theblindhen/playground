@@ -145,6 +145,7 @@ mod test {
         assert_eq!(nat(&mut "CIICICP".into()), Ok(1 | 8 | 32));
     }
 
+    #[test]
     fn test_consts() {
         assert_eq!(consts(&mut "".into()), "".into());
 
@@ -165,7 +166,7 @@ mod test {
         // Test replacement of two bases before EOF
         let mut dna = "CFIPC".into();
         assert_eq!(consts(&mut dna), "IC".into());
-        assert_eq!(dna, "IFC".into());
+        assert_eq!(dna, "IPC".into());
     }
 
     #[test]
