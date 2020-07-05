@@ -188,5 +188,19 @@ mod test {
                 PItem::Base(Base::P)
             ])
         );
+
+        // The IF pattern item is always followed by a base that's ignored. Then
+        // comes a sequence of escaped bases followed by I[IFP] as a terminator,
+        // which doubles as the start of the next pattern item!
+        assert_eq!(
+            pattern(&mut "IFC() IP(P) IIF".into(), &mut noop),
+            Ok(vec![PItem::Search("".into()), PItem::Skip(0)])
+        );
+
+        // Same example as above but with non-trivial literals.
+        assert_eq!(
+            pattern(&mut "IFI(C F P IC) IP(CP) IIF".into(), &mut noop),
+            Ok(vec![PItem::Search("ICFP".into()), PItem::Skip(1)])
+        );
     }
 }
