@@ -104,6 +104,29 @@ impl DNA {
     pub fn at(&self, index: usize) -> Option<Base> {
         self.v.get(index).map(|b| *b)
     }
+
+    pub fn search(&self, offset: usize, needle: &Self) -> Option<usize> {
+        let mut needle = needle.v.focus();
+        let mut haystack = self.v.focus();
+        let mut needle_pos = 0;
+        let mut haystack_pos = offset;
+        while haystack_pos <= haystack.len() { // Note: `<=` so we can handle EOF
+            match needle.get(needle_pos) {
+                Some(needle_base) => {
+                    if Some(needle_base) == haystack.get(haystack_pos) {
+                        haystack_pos += 1;
+                        needle_pos += 1;
+                    } else {
+                        haystack_pos += 1;
+                        haystack_pos -= needle_pos;
+                        needle_pos = 0;
+                    }
+                }
+                None => return Some(haystack_pos)
+            }
+        }
+        None
+    }
 }
 
 #[cfg(test)]
@@ -130,5 +153,29 @@ mod test {
         assert_eq!(dna.subseq(5, 3), "".into());
         assert_eq!(dna.subseq(3, 3), "".into());
         assert_eq!(dna.subseq(3, 0), "".into());
+    }
+
+    #[test]
+    fn test_search() {
+        let mut dna: DNA = "I IC ICF ICF".into();
+        assert_eq!(dna.search(0, &"".into()), Some(0));
+
+        assert_eq!(dna.search(0, &"C".into()), Some(3));
+        assert_eq!(dna.search(2, &"C".into()), Some(3));
+        assert_eq!(dna.search(3, &"C".into()), Some(5));
+        assert_eq!(dna.search(0, &"P".into()), None);
+
+        assert_eq!(dna.search(0, &"IC".into()), Some(3));
+        assert_eq!(dna.search(1, &"IC".into()), Some(3));
+        assert_eq!(dna.search(2, &"IC".into()), Some(5));
+
+        assert_eq!(dna.search(0, &"ICF".into()), Some(6));
+        assert_eq!(dna.search(4, &"ICF".into()), Some(9));
+        assert_eq!(dna.search(6, &"F".into()), Some(9));
+        assert_eq!(dna.search(6, &"CF".into()), Some(9));
+        assert_eq!(dna.search(0, &"FICF".into()), Some(9));
+        assert_eq!(dna.search(8, &"F".into()), Some(9));
+        assert_eq!(dna.search(9, &"F".into()), None);
+        assert_eq!(dna.search(10, &"F".into()), None);
     }
 }
