@@ -116,6 +116,17 @@ impl DNA {
     }
 }
 
+impl IntoIterator for DNA {
+    type Item = Base;
+    type IntoIter = im::vector::ConsumingIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.v.into_iter()
+    }
+}
+
+
+
 #[cfg(test)]
 mod test {
     use super::*;

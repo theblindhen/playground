@@ -202,12 +202,64 @@ fn matchreplace(mut dna: &mut DNA, pattern: Pattern, template: Template) {
         }
     }
     dna.assign(dna.subseq(i, dna.len()));
-    replace(dna, template, env)
+    dna.concat(replace(template, env))
 }
 
-fn replace(mut dna: &mut DNA, template: Template, env : Vec<DNA>) {
-    //TODO
+fn replace(template: Template, env : Vec<DNA>) -> DNA {
+    let mut r = DNA::default();
+    for t in template {
+        match t {
+            TItem::Base(b) => r.append(b),
+            TItem::Ref{n, l} => {
+                r.concat(protect(l, env[n].clone()))
+            },
+            TItem::RefLen(n) => {
+                r.concat(asnat(env[n].len()))
+            }
+        }
+    }
+    r
 }
+
+fn protect(l: usize, d: DNA) -> DNA {
+    if l == 0 {
+        d
+    } else {
+        protect(l-1, quote(d))
+    }
+}
+
+fn quote(d: DNA) -> DNA {
+    let mut r = DNA::default();
+    for b in d {
+        match b {
+            Base::I => r.append(Base::C),
+            Base::C => r.append(Base::F),
+            Base::F => r.append(Base::P),
+            Base::P => {
+                r.append(Base::I);
+                r.append(Base::C)
+            }
+        }
+    }
+    r
+}
+
+
+fn asnat(mut n: usize) -> DNA {
+    let mut r = DNA::default();
+    while n > 0 {
+        if n % 2 == 0 { // Even
+            r.append(Base::I);
+        } else {
+            r.append(Base::C);
+        }
+        n /= 2;
+    }
+    r.append(Base::P);
+    r
+}
+
 
 #[cfg(test)]
 mod test {
