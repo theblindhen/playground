@@ -1,0 +1,17 @@
+[package]
+name = "bigint"
+version = "0.1.0"
+authors = ["Johan Rosenkilde <jsrn@jsrn.dk>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+clap = { version = "2.33.1", default-features = false }
+structopt = { version = "0.3.15", default-features = false }
+
+num-bigint = "0.3"
+num-traits = "0.2.12"
+
