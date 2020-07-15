@@ -38,7 +38,7 @@ type Template = Vec<TItem>;
 fn step(dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<(), Finish> {
     let p = pattern(dna, rna_sink)?;
     let t = template(dna, rna_sink)?;
-    matchreplace(p, t);
+    matchreplace(dna, p, t);
     Ok(())
 }
 
@@ -165,8 +165,48 @@ fn template(mut dna: &mut DNA, rna_sink: &mut dyn FnMut(DNA)) -> Result<Template
     Err(Finish)
 }
 
-fn matchreplace(pattern: Pattern, template: Template) {
-    // TODO
+fn matchreplace(mut dna: &mut DNA, pattern: Pattern, template: Template) {
+    let mut i : usize = 0;
+    let mut env : Vec<DNA> = vec![];
+    let mut c_rev : Vec<usize> = vec![];
+    for p in pattern {
+        match p {
+            PItem::Base(b) => {
+                match dna.at(i) {
+                    b => { i += 1 },
+                    _ => return
+                }
+            },
+            PItem::Skip(n) => {
+                i += n;
+                if i > dna.len() {
+                    return
+                }
+            },
+            PItem::Search(s) => {
+                match dna.find_first(&s, i) {
+                    None => return,
+                    Some(idx) => {
+                        let n = idx + s.len();
+                        i = n
+                    }
+                }
+            },
+            PItem::Open() => {
+                c_rev.push(i)
+            },
+            PItem::Close() => {
+                let from =  c_rev.pop().unwrap();
+                env.push(dna.subseq(from, i))
+            }
+        }
+    }
+    dna.assign(dna.subseq(i, dna.len()));
+    replace(dna, template, env)
+}
+
+fn replace(mut dna: &mut DNA, template: Template, env : Vec<DNA>) {
+    //TODO
 }
 
 #[cfg(test)]

@@ -104,6 +104,16 @@ impl DNA {
     pub fn at(&self, index: usize) -> Option<Base> {
         self.v.get(index).map(|b| *b)
     }
+
+    pub fn find_first(&self, needle: &DNA,  from: usize) -> Option<usize> {
+        // Finds the least index `i >= from` such that `needle` occurs in `self`.
+        // TODO
+        None
+    }
+
+    pub fn assign(&mut self,  other: DNA) {
+        self.v = other.v
+    }
 }
 
 #[cfg(test)]
