@@ -106,6 +106,23 @@ impl DNA {
     }
 
     pub fn find_first(&self, needle: &DNA,  from: usize) -> Option<usize> {
+        // Finds the least index `i >= from` such that `needle` occurs in `self`.
+        let len = needle.len();
+        let mut i = from;
+        while i < self.len() - len {
+            let mut j = 0;
+            while self.at(i) == needle.at(j) {
+                j += 1;
+                if j == len {
+                    return Some(i)
+                }
+            }
+            i += 1;
+        }
+        None
+    }
+
+    pub fn find_first_jonas(&self, needle: &DNA,  from: usize) -> Option<usize> {
         let mut needle = needle.v.focus();
         let mut haystack = self.v.focus();
         let mut needle_pos = 0;

@@ -201,8 +201,10 @@ fn matchreplace(mut dna: &mut DNA, pattern: Pattern, template: Template) {
             }
         }
     }
-    dna.assign(dna.subseq(i, dna.len()));
-    dna.concat(replace(template, env))
+    let mut r = replace(template, env);
+    let tail = dna.subseq(i, dna.len());
+    dna.assign(r);
+    dna.concat(tail)
 }
 
 fn replace(template: Template, env : Vec<DNA>) -> DNA {
@@ -353,5 +355,47 @@ mod test {
         let t = template(&mut "C III(ICFPICF) F IIC".into(), &mut |x| rna.push(x));
         assert_eq!(t, Ok(vec![TItem::Base(Base::I), TItem::Base(Base::C)]));
         assert_eq!(rna, vec!["ICFPICF".into()]);
+    }
+
+    #[test]
+    fn test_asnat() {
+        assert_eq!(nat(&mut asnat(0)), Ok(0));
+        assert_eq!(nat(&mut asnat(1)), Ok(1));
+        assert_eq!(nat(&mut asnat(2)), Ok(2));
+        assert_eq!(nat(&mut asnat(9)), Ok(9));
+        assert_eq!(nat(&mut asnat(9384)), Ok(9384));
+    }
+
+    #[test]
+    fn test_quote() {
+        assert_eq!(quote("ICFP".into()), "CFPIC".into());
+        assert_eq!(quote("IICCFFPP".into()), "CCFFPPICIC".into());
+    }
+
+    #[test]
+    fn test_protect() {
+        assert_eq!(protect(0, "ICFP".into()), "ICFP".into());
+        let l1 = protect(1, "ICFP".into());
+        assert_eq!(l1, "CFPIC".into());
+        assert_eq!(protect(2, "ICFP".into()), protect(1, l1));
+        assert_eq!(protect(2, "ICFP".into()), "FPICCF".into());
+    }
+
+    #[test]
+    fn test_step() {
+        let mut dna : DNA = "IIPIPICPIICICIIFICCIFPPIICCFPC".into();
+        let mut rna_sink = |rna| ();
+        step(&mut dna, &mut rna_sink);
+        assert_eq!(dna, "PICFC".into());
+        
+        let mut dna : DNA = "IIPIPICPIICICIIFICCIFCCCPPIICCFPC".into();
+        let mut rna_sink = |rna| ();
+        step(&mut dna, &mut rna_sink);
+        assert_eq!(dna, "PIICCFCFFPC".into());
+        
+        let mut dna : DNA = "IIPIPIICPIICIICCIICFCFC".into();
+        let mut rna_sink = |rna| ();
+        step(&mut dna, &mut rna_sink);
+        assert_eq!(dna, "I".into());
     }
 }
