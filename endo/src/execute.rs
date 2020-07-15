@@ -247,6 +247,123 @@ fn quote(d: DNA) -> DNA {
     r
 }
 
+mod jonas_matchreplace {
+    use super::*;
+    type Environment = Vec<DNA>;
+
+    fn matchreplace(mut dna: &mut DNA, pat: Pattern, t: Template) {
+        // TODO: it's inefficient to use `i`: we're traversing `dna` left to right
+        // but without the benefit of amortization.
+        let mut i = 0;
+        let mut e: Environment = vec![];
+        let mut c_rev: Vec<usize> = vec![];
+        for p in pat {
+            match p {
+                PItem::Base(b) => {
+                    if dna.at(i) == Some(b) {
+                        i += 1;
+                    } else {
+                        return;
+                    }
+                }
+                PItem::Skip(n) => {
+                    i += n;
+                    if i > dna.len() {
+                        return;
+                    }
+                }
+                PItem::Search(s) => match dna.find_first_jonas(&s, i) {
+                    Some(n) => i = n,
+                    None => return,
+                },
+                PItem::Open() => c_rev.push(i),
+                PItem::Close() => {
+                    // The `c_rev` stack must be non-empty, or the spec is meaningless
+                    let head = c_rev.pop().unwrap();
+                    e.push(dna.subseq(head, i));
+                }
+            }
+        }
+        dna.drop(i);
+        replace(dna, t, e);
+    }
+
+    fn replace(mut dna: &mut DNA, tpl: Template, e: Environment) {
+        let mut r = DNA::default();
+        for t in tpl {
+            match t {
+                TItem::Base(b) => r.append(b),
+                TItem::Ref { n, l } => {
+                    if let Some(en) = e.get(n) {
+                        r.concat(protect(l, en.clone()));
+                    }
+                    // If `n` is out of bounds, `en` conceptually becomes the empty
+                    // DNA sequence, which is empty when protected.
+                }
+                TItem::RefLen(n) => {
+                    let len = e.get(n).map_or_else(|| 0, |s| s.len());
+                    r.concat(asnat(len));
+                }
+            }
+        }
+    }
+
+    fn protect(mut l: usize, mut d: DNA) -> DNA {
+        for _ in 0 .. l {
+            d = quote(d);
+        }
+        d
+    }
+
+    fn quote(mut d: DNA) -> DNA {
+        let mut result = DNA::default();
+        while let Some(b) = d.pop() {
+            match b {
+                Base::I => result.append(Base::C),
+                Base::C => result.append(Base::F),
+                Base::F => result.append(Base::P),
+                Base::P => {
+                    result.append(Base::I);
+                    result.append(Base::C);
+                }
+            }
+        }
+        result
+    }
+
+    // TODO: instead of creating a new DNA fragment, appending to an existing one
+    // might be faster.
+    fn asnat(mut n: usize) -> DNA {
+        let mut result = DNA::default();
+        while n > 0 {
+            result.append(if n % 2 == 0 { Base::I } else { Base::C });
+            n /= 2;
+        }
+        result.append(Base::P);
+        result
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn test_asnat_jonas() {
+            assert_eq!(asnat(5), "CICP".into());
+            assert_eq!(asnat(0), "P".into());
+            assert_eq!(asnat(1), "CP".into());
+            assert_eq!(asnat(2), "ICP".into());
+
+            // Test that `asnat` is the right inverse of `nat`
+            for i in 0 .. 10 {
+                let mut dna = asnat(i);
+                assert_eq!(nat(&mut dna), Ok(i));
+                assert_eq!(dna, "".into());
+            }
+        }
+    }
+}
+
 
 fn asnat(mut n: usize) -> DNA {
     let mut r = DNA::default();
