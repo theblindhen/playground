@@ -9,7 +9,10 @@ use std::io::BufReader;
 use std::fs::File;
 use std::str::FromStr;
 
+use std::time::Instant;
+
 use num_bigint::BigInt;
+use num_traits::Zero;
 
 // Struct for command line parsing 
 #[derive(StructOpt, Debug)]
@@ -32,20 +35,37 @@ struct MyOpt {
     file: PathBuf,
 }
 
-// Parse a json file on disk
 #[derive(Deserialize, Debug)]
-struct Gcd {
+struct JsonGcd {
     a: String,
     b: String,
 }
 
+struct Gcd {
+    a: BigInt,
+    b: BigInt
+}
+
+// TODO: Should be TryForm since it may fail
+impl From<JsonGcd> for Gcd {
+    fn from(g: JsonGcd) -> Self {
+        Gcd { a: BigInt::from_str(&g.a).unwrap(),
+              b: BigInt::from_str(&g.b).unwrap() }
+    }
+}
+
+// Parse a json file on disk
 fn file_json(path: PathBuf) -> Result<Vec<Gcd>, Box<dyn std::error::Error>> {
 
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     // Read the JSON contents of the file as an instance of `User`.
     let json = serde_json::from_reader(reader)?;
-    Ok(json)
+    let jsonGcds : Vec<JsonGcd> = json;
+    let gcds : Vec<Gcd> = jsonGcds.into_iter()
+                                  .map(|g| { Gcd::from(g) })
+                                  .collect();
+    Ok(gcds)
 }
 
 fn main() {
@@ -55,11 +75,31 @@ fn main() {
     match file_json(opt.file) {
         Err(e) => println!("\nThere was an error with reading the JSON file:\n{:#?}", e),
         Ok(gcds) => {
-            println!("a = {},\nb = {}", gcds[0].a, gcds[0].b);
-            let a = BigInt::from_str(&gcds[0].a).unwrap();
-            let b = BigInt::from_str(&gcds[0].b).unwrap();
-            let gcd = ints::big_ea(&a, &b);
-            println!("gcd = {}", &gcd);
+            println!("First pair:\na = {},\nb = {}", gcds[0].a, gcds[0].b);
+            println!("Their gcd: {}", ints::big_ea_simple(&gcds[0].a, &gcds[0].b)); // warm-up
+
+            let before = Instant::now();
+            let mut sum : BigInt = Zero::zero(); // Make sure compiler doesn't remove gcd calls
+            for i in 1..10 {
+                for g in &gcds {
+                    let gcd = ints::big_ea_simple(&g.a, &g.b);
+                    sum += gcd;
+                }
+            }
+            println!("Simple elapsed: {:.2?}. Gcd sum {}", before.elapsed(), sum);
+
+            ints::big_ea_fast(&gcds[0].a, &gcds[0].b); // warmup
+            let before = Instant::now();
+            let mut sum : BigInt = Zero::zero(); // Make sure compiler doesn't remove gcd calls
+            for i in 1..10 {
+                for g in &gcds {
+                    let gcd = ints::big_ea_simple(&g.a, &g.b);
+                    sum += gcd;
+                }
+            }
+            println!("Simple elapsed: {:.2?}. Gcd sum {}", before.elapsed(), sum);
+
+            // println!("gcd = {}", &gcd);
             ()
         }
     }
