@@ -1,5 +1,6 @@
 use im::vector::Vector;
 use std::fmt;
+use std::convert::{TryFrom, TryInto};
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -10,14 +11,15 @@ pub enum Base {
     P,
 }
 
-impl From<char> for Base {
-    fn from(c: char) -> Self {
+impl TryFrom<char> for Base {
+    type Error = ();
+    fn try_from(c: char) -> Result<Self, ()> {
         match c {
-            'I' => Base::I,
-            'C' => Base::C,
-            'F' => Base::F,
-            'P' => Base::P,
-            _ => panic!("Non-ICFP base '{}'", c),
+            'I' => Ok(Base::I),
+            'C' => Ok(Base::C),
+            'F' => Ok(Base::F),
+            'P' => Ok(Base::P),
+            _ => Err(()),
         }
     }
 }
@@ -42,7 +44,10 @@ impl From<&str> for DNA {
     fn from(s: &str) -> Self {
         let mut v = Vector::new();
         for c in s.chars() {
-            v.push_back(c.into());
+            // Ignore unknown characters
+            if let Ok(b) = c.try_into() {
+                v.push_back(b);
+            }
         }
         DNA { v }
     }
