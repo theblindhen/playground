@@ -105,11 +105,11 @@ impl DNA {
         self.v.get(index).map(|b| *b)
     }
 
-    pub fn search(&self, offset: usize, needle: &Self) -> Option<usize> {
+    pub fn find_first(&self, needle: &DNA,  from: usize) -> Option<usize> {
         let mut needle = needle.v.focus();
         let mut haystack = self.v.focus();
         let mut needle_pos = 0;
-        let mut haystack_pos = offset;
+        let mut haystack_pos = from;
         while haystack_pos <= haystack.len() { // Note: `<=` so we can handle EOF
             match needle.get(needle_pos) {
                 Some(needle_base) => {
@@ -127,7 +127,22 @@ impl DNA {
         }
         None
     }
+
+    pub fn assign(&mut self,  other: DNA) {
+        self.v = other.v
+    }
 }
+
+impl IntoIterator for DNA {
+    type Item = Base;
+    type IntoIter = im::vector::ConsumingIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.v.into_iter()
+    }
+}
+
+
 
 #[cfg(test)]
 mod test {
@@ -156,26 +171,26 @@ mod test {
     }
 
     #[test]
-    fn test_search() {
+    fn test_find_first() {
         let mut dna: DNA = "I IC ICF ICF".into();
-        assert_eq!(dna.search(0, &"".into()), Some(0));
+        assert_eq!(dna.find_first(&"".into(), 0), Some(0));
 
-        assert_eq!(dna.search(0, &"C".into()), Some(3));
-        assert_eq!(dna.search(2, &"C".into()), Some(3));
-        assert_eq!(dna.search(3, &"C".into()), Some(5));
-        assert_eq!(dna.search(0, &"P".into()), None);
+        assert_eq!(dna.find_first(&"C".into(), 0), Some(3));
+        assert_eq!(dna.find_first(&"C".into(), 2), Some(3));
+        assert_eq!(dna.find_first(&"C".into(), 3), Some(5));
+        assert_eq!(dna.find_first(&"P".into(), 0), None);
 
-        assert_eq!(dna.search(0, &"IC".into()), Some(3));
-        assert_eq!(dna.search(1, &"IC".into()), Some(3));
-        assert_eq!(dna.search(2, &"IC".into()), Some(5));
+        assert_eq!(dna.find_first(&"IC".into(), 0), Some(3));
+        assert_eq!(dna.find_first(&"IC".into(), 1), Some(3));
+        assert_eq!(dna.find_first(&"IC".into(), 2), Some(5));
 
-        assert_eq!(dna.search(0, &"ICF".into()), Some(6));
-        assert_eq!(dna.search(4, &"ICF".into()), Some(9));
-        assert_eq!(dna.search(6, &"F".into()), Some(9));
-        assert_eq!(dna.search(6, &"CF".into()), Some(9));
-        assert_eq!(dna.search(0, &"FICF".into()), Some(9));
-        assert_eq!(dna.search(8, &"F".into()), Some(9));
-        assert_eq!(dna.search(9, &"F".into()), None);
-        assert_eq!(dna.search(10, &"F".into()), None);
+        assert_eq!(dna.find_first(&"ICF".into(), 0), Some(6));
+        assert_eq!(dna.find_first(&"ICF".into(), 4), Some(9));
+        assert_eq!(dna.find_first(&"F".into(), 6), Some(9));
+        assert_eq!(dna.find_first(&"CF".into(), 6), Some(9));
+        assert_eq!(dna.find_first(&"FICF".into(), 0), Some(9));
+        assert_eq!(dna.find_first(&"F".into(), 8), Some(9));
+        assert_eq!(dna.find_first(&"F".into(), 9), None);
+        assert_eq!(dna.find_first(&"F".into(), 10), None);
     }
 }
