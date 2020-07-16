@@ -186,10 +186,7 @@ fn matchreplace(mut dna: &mut DNA, pattern: Pattern, template: Template) {
             PItem::Search(s) => {
                 match dna.find_first(&s, i) {
                     None => return,
-                    Some(idx) => {
-                        let n = idx + s.len();
-                        i = n
-                    }
+                    Some(idx) => i = idx,
                 }
             },
             PItem::Open() => {

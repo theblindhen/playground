@@ -106,15 +106,19 @@ impl DNA {
     }
 
     pub fn find_first(&self, needle: &DNA,  from: usize) -> Option<usize> {
-        // Finds the least index `i >= from` such that `needle` occurs in `self`.
+        // Finds the least index `n >= from` such that `needle` is the postfix
+        // of `self[from,...]`.
         let len = needle.len();
+        if len == 0 {
+            return Some(0);
+        }
         let mut i = from;
-        while i < self.len() - len {
+        while i <= self.len() - len {
             let mut j = 0;
-            while self.at(i) == needle.at(j) {
+            while self.at(i+j) == needle.at(j) {
                 j += 1;
                 if j == len {
-                    return Some(i)
+                    return Some(i + len)
                 }
             }
             i += 1;
