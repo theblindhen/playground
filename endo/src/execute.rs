@@ -172,9 +172,10 @@ fn matchreplace(mut dna: &mut DNA, pattern: Pattern, template: Template) {
     for p in pattern {
         match p {
             PItem::Base(b) => {
-                match dna.at(i) {
-                    b => { i += 1 },
-                    _ => return
+                if dna.at(i) == Some(b) {
+                    i += 1
+                } else {
+                    return
                 }
             },
             PItem::Skip(n) => {
@@ -193,7 +194,7 @@ fn matchreplace(mut dna: &mut DNA, pattern: Pattern, template: Template) {
                 c_rev.push(i)
             },
             PItem::Close() => {
-                let from =  c_rev.pop().unwrap();
+                let from =  c_rev.pop().expect("Closing an unopened group");
                 env.push(dna.subseq(from, i))
             }
         }
